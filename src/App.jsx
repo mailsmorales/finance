@@ -1,8 +1,19 @@
 import { Home, Login, Signup } from "./pages";
+import { auth } from "./firebase/config";
 import { Routes, Route } from "react-router-dom";
 import { Navbar } from "./components/navbar/Navbar";
+import { useEffect } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { useAuthContext } from "./hooks/useAuthContext";
 
 function App() {
+  const { dispatch } = useAuthContext();
+  useEffect(() => {
+    const cancel = onAuthStateChanged(auth, (_user) => {
+      dispatch({ type: "LOGIN", payload: _user });
+    });
+    return () => cancel();
+  }, []);
   return (
     <div className="App">
       <Navbar />
