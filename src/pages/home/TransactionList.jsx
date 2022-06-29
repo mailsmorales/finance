@@ -1,9 +1,11 @@
 import React from "react";
+import { useAuthContext } from "../../hooks/useAuthContext";
 import { getCollection } from "../../hooks/useCollection";
 import styles from "./Home.module.css";
 
 const TransactionList = () => {
-  const { documents } = getCollection('transactions');
+  const { user } = useAuthContext();
+  const { documents } = getCollection("transactions", user.uid);
   return (
     <ul className={styles.transactions}>
       {documents.length > 0 &&

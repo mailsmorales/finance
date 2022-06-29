@@ -5,6 +5,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  where,
 } from "firebase/firestore";
 import { useEffect, useReducer, useState } from "react";
 import { firestore } from "../firebase/config";
@@ -71,14 +72,14 @@ export const useCollection = () => {
   return { addDocument, deleteDocument, isCancelled, response };
 };
 
-export const getCollection = (collectionName) => {
+export const getCollection = (collectionName, userId) => {
   const [documents, setDocuments] = useState([]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const collectionRef = query(
       collection(firestore, collectionName),
-      orderBy("createdAt", "desc")
+      where("userId", "==", userId), 
     );
 
     const unsubscribe = onSnapshot(collectionRef, (snap) => {
