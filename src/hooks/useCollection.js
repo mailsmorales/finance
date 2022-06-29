@@ -1,4 +1,11 @@
-import { addDoc, collection } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+} from "firebase/firestore";
 import { useEffect, useReducer, useState } from "react";
 import { firestore } from "../firebase/config";
 
@@ -12,7 +19,23 @@ const initialState = {
 const firestoreReducer = (state, action) => {
   switch (action.type) {
     case "IS_PENDING": {
-      return { ...state, isPanding: action.payload };
+      return { document: null, isPending: true, error: null, success: null };
+    }
+    case "ADDED_DOCUMENT": {
+      return {
+        isPending: false,
+        document: action.payload,
+        error: null,
+        success: true,
+      };
+    }
+    case "ERROR": {
+      return {
+        document: null,
+        error: action.payload,
+        isPending: false,
+        success: false,
+      };
     }
     default:
       return state;
@@ -28,11 +51,14 @@ export const useCollection = () => {
   const addDocument = async (newDocument) => {
     dispatch({ type: "IS_PENDING", payload: true });
     try {
-      await addDoc(collectionRef, newDocument);
-      dispatch({ type: "IS_PENDING", payload: false });
+      const addedDoc = await addDoc(collectionRef, {
+        ...newDocument,
+        createdAt: serverTimestamp(),
+      });
+      dispatch({ type: "ADDED_DOCUMENT", payload: addedDoc });
     } catch (err) {
-      console.log(err.messge);
-      dispatch({ type: "IS_PENDING", payload: false });
+      // console.log(err.messge);
+      dispatch({ type: "ERROR", payload: err.message });
     }
   };
 
@@ -42,5 +68,34 @@ export const useCollection = () => {
     return () => setIsCancelled(true);
   }, []);
 
-  return { addDocument, deleteDocument, isCancelled };
+  return { addDocument, deleteDocument, isCancelled, response };
+};
+
+export const getCollection = (collectionName) => {
+  const [documents, setDocuments] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const collectionRef = query(
+      collection(firestore, collectionName),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(collectionRef, (snap) => {
+      let results = [];
+
+      snap.docs.forEach((doc) => {
+        results.push({ ...doc.data(), id: doc.id });
+      });
+
+      setDocuments(results);
+      setError(null);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [collection]);
+
+  return { documents, error };
 };
