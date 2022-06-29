@@ -1,27 +1,22 @@
-import { Home, Login, Signup } from "./pages";
-import { auth } from "./firebase/config";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Navbar } from "./components/navbar/Navbar";
-import { useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
 import { useAuthContext } from "./hooks/useAuthContext";
+import { Home, Login, Signup } from "./pages";
 
 function App() {
-  const { dispatch } = useAuthContext();
-  useEffect(() => {
-    const cancel = onAuthStateChanged(auth, (_user) => {
-      dispatch({ type: "LOGIN", payload: _user });
-    });
-    return () => cancel();
-  }, []);
+  const { isReady, user } = useAuthContext();
   return (
     <div className="App">
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="login" element={<Login />} />
-        <Route path="signup" element={<Signup />} />
-      </Routes>
+      {isReady && (
+        <>
+          <Navbar />
+          <Routes>
+            <Route path="/" element={!user ? <Navigate to='/login' /> : <Home/>} />
+            <Route path="/login" element={user ? <Navigate to='/' /> : <Login/>} />
+            <Route path="/signup" element={user ? <Navigate to='/' /> : <Signup/>} />
+          </Routes>
+        </>
+      )}
     </div>
   );
 }
